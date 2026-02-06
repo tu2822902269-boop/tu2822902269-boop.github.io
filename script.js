@@ -8,24 +8,55 @@ function todayKey() {
 
 function getTimeLabel() {
   const h = new Date().getHours();
-  if (h < 12) return "早上好";
-  if (h < 18) return "下午好";
+  // 小荼定义的时段：5-11 早上；12-17 下午；18-4 晚上
+  if (h >= 5 && h <= 11) return "早上好";
+  if (h >= 12 && h <= 17) return "下午好";
   return "晚上好";
 }
 
 function getTimePrompt() {
   const label = getTimeLabel();
-  if (label === "早上好") return "（还没贴贴…来和小宝说早上好吧 ✨）";
-  if (label === "下午好") return "（还没贴贴…来和小宝说下午好吧 ☀️）";
-  return "（还没贴贴…来和小宝说晚上好吧 🌙）";
+  // 打卡前的提示：不出现颜文字
+  if (label === "早上好") return "还没贴贴…来和小宝说早上好吧！";
+  if (label === "下午好") return "还没贴贴…来和小宝说下午好吧！";
+  return "还没贴贴…来和小宝说晚上好吧！";
 }
 
 // ===== 点击音效 =====
+let _audioCtx = null;
 function playClick() {
+  // iOS 上 <audio> 可能因为权限/未加载而不响；用 WebAudio 做一个“哒”更稳
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) {
+      // 复用同一个 AudioContext，避免 Safari 频繁 new/close 导致不出声
+      if (!_audioCtx) _audioCtx = new AudioCtx();
+      _audioCtx.resume?.();
+
+      const o = _audioCtx.createOscillator();
+      const g = _audioCtx.createGain();
+      o.type = "square";
+      o.frequency.value = 900;
+
+      // 非常短的包络：啵一下
+      const now = _audioCtx.currentTime;
+      g.gain.setValueAtTime(0.0001, now);
+      g.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+
+      o.connect(g);
+      g.connect(_audioCtx.destination);
+      o.start(now);
+      o.stop(now + 0.09);
+      return;
+    }
+  } catch (e) {}
+  // 兜底：如果你未来放了 click.mp3，就仍然能用
   const sound = document.getElementById("clickSound");
-  if (!sound) return;
-  sound.currentTime = 0;
-  sound.play().catch(()=>{});
+  if (sound) {
+    sound.currentTime = 0;
+    sound.play().catch(() => {});
+  }
 }
 
 // ===== 3秒小气泡 =====
@@ -46,12 +77,13 @@ function updateClock(){
   const greetingEl = document.getElementById("greeting");
   const dateEl = document.getElementById("date");
   const timeEl = document.getElementById("time");
-  const btn = document.getElementById("btn");
+  const btn = document.getElementById("greetBtn");
 
-  if (greetingEl) greetingEl.innerText = getTimeLabel() + " " + (now.getHours() < 12 ? "🌤" : now.getHours() < 18 ? "☀️" : "🌙");
+  const label = getTimeLabel();
+  if (greetingEl) greetingEl.innerText = label + " " + (label === "早上好" ? "🌤" : label === "下午好" ? "☀️" : "🌙");
   if (dateEl) dateEl.innerText = now.toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
   if (timeEl) timeEl.innerText = "现在是 " + now.toLocaleTimeString('zh-CN');
-  if (btn) btn.innerText = getTimeLabel();
+  if (btn) btn.innerText = label;
 }
 
 // ===== 天数渲染 =====
@@ -82,7 +114,7 @@ function seededMessage(dateStr) {
 
 function setMessageToUI(msg) {
   const faceEl = document.getElementById("face");
-  const quoteEl = document.getElementById("quote");
+  const quoteEl = document.getElementById("quoteText");
 
   if (typeof msg === "string") {
     if (faceEl) faceEl.textContent = "";
@@ -123,7 +155,7 @@ function pickMessage() {
 function renderSavedMessageIfAny() {
   const today = todayKey();
   const last = localStorage.getItem("lastGreetingDate");
-  const btn = document.getElementById("btn");
+  const btn = document.getElementById("greetBtn");
 
   if (last === today) {
     // 今日已打卡：优先读取 lastMessage；如果没有（旧版本遗留），用 seededMessage 补一个并写回
@@ -152,7 +184,7 @@ function renderSavedMessageIfAny() {
 
   // 今日未打卡：显示邀请文案，不显示颜文字
   const faceEl = document.getElementById("face");
-  const quoteEl = document.getElementById("quote");
+  const quoteEl = document.getElementById("quoteText");
   if (faceEl) faceEl.textContent = "";
   setFaceVisible(false);
   if (quoteEl) quoteEl.textContent = getTimePrompt();
@@ -172,7 +204,7 @@ function sayHi() {
   if (last === today) return;
 
   playClick();
-  showBubble("今天也好喜欢猫猫）");
+  showBubble("今天也好喜欢猫猫💕");
 
   localStorage.setItem("lastGreetingDate", today);
 
@@ -185,7 +217,7 @@ function sayHi() {
   const { saved } = setMessageToUI(msg);
   localStorage.setItem("lastMessage", JSON.stringify(saved));
 
-  const btn = document.getElementById("btn");
+  const btn = document.getElementById("greetBtn");
   if (btn) {
     btn.disabled = true;
     btn.style.opacity = "0.6";
@@ -199,11 +231,15 @@ document.addEventListener("DOMContentLoaded", () => {
   renderSavedMessageIfAny();
   updateClock();
 
+  // 绑定按钮点击
+  const btn = document.getElementById("greetBtn");
+  if (btn) btn.addEventListener("click", sayHi);
+
   setInterval(() => {
     const today = todayKey();
     const last = localStorage.getItem("lastGreetingDate");
     if (last !== today) {
-      const quoteEl = document.getElementById("quote");
+      const quoteEl = document.getElementById("quoteText");
       if (quoteEl) quoteEl.textContent = getTimePrompt();
     }
     updateClock();
