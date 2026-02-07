@@ -40,8 +40,7 @@ const KEY_DAILY_MSG = "cat_daily_msg";
     }
     const now=new Date();
     const start=new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0,0);
-    localStorage.setItem(START_KEY, start.toISOString());
-    return start;
+    const saved = localStorage.getItem(dailyMsgKey());
   }
   function calcDays(){
     const s=getStartDate();
@@ -52,10 +51,10 @@ const KEY_DAILY_MSG = "cat_daily_msg";
     return Math.max(1, Math.floor(diff/86400000)+1);
   }
 
-  function todayKey(){
-    const d=new Date();
-    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
-  }
+ function todayKey(){
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+}
   function dailyMsgKey(){
   return KEY_DAILY_MSG + "_" + todayKey();
 }
