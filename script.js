@@ -114,17 +114,31 @@ const KEY_DAILY_MSG = "cat_daily_msg";
 
     if (hasCheckedIn()) {
   // ✅ 已贴贴：显示“今天随机到的那条留言”
-  const saved = localStorage.getItem(KEY_DAILY_MSG);
-  if (saved) {
-    try {
-      const one = JSON.parse(saved);
-      messageEl.textContent = `${one.face} ${one.text}`;
-    } catch (e) {
-      messageEl.textContent = getAfterMessage(p.label);
+      if (hasCheckedIn()) {
+      // ✅ 已贴贴：优先读今天存下来的随机留言对象
+      let one = null;
+      try {
+        const raw = localStorage.getItem(KEY_DAILY_MSG);
+        if (raw && raw.trim().startsWith("{")) one = JSON.parse(raw);
+      } catch (e) {}
+
+      if (one && one.face && one.text) {
+        messageEl.textContent = `${one.face} ${one.text}`;
+      } else {
+        // 兜底：别让页面空着
+        messageEl.textContent = "（今天已经贴贴过啦💕）";
+      }
+
+      btn.disabled = true;
+      btn.style.opacity = "0.65";
+      btn.style.cursor = "default";
+    } else {
+      // ✅ 未贴贴：显示引导语
+      messageEl.textContent = `还没贴贴…来和小宝说${p.label}吧！`;
+      btn.disabled = false;
+      btn.style.opacity = "1";
+      btn.style.cursor = "pointer";
     }
-  } else {
-    messageEl.textContent = getAfterMessage(p.label);
-  }
 
   btn.disabled = true;
   btn.style.opacity = "0.65";
