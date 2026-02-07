@@ -125,17 +125,28 @@ const KEY_DAILY_MSG = "cat_daily_msg";
     } catch (e) {
       messageEl.textContent = "（猫猫今天的留言解析失败了…）";
     }
-  } else {
-    // ✅ 如果今天没存过，就现场抽一条并存起来（避免显示奇怪的“已贴贴文案”）
-    const pool = (window.messages && window.messages.length) ? window.messages : [];
-    if (pool.length) {
-      const one = pool[Math.floor(Math.random() * pool.length)];
+ if (hasCheckedIn()) {
+  const saved = localStorage.getItem(dailyMsgKey());
+  if (saved) {
+    try {
+      const one = JSON.parse(saved);
       messageEl.textContent = `${one.face} ${one.text}`;
-      localStorage.setItem(dailyMsgKey(), JSON.stringify(one));
-    } else {
-      messageEl.textContent = "（猫猫的留言池还没加载到…）";
+    } catch (e) {
+      messageEl.textContent = "（猫猫今天的留言读取失败…）";
     }
+  } else {
+    messageEl.textContent = "（猫猫今天的留言还没写进来…）";
   }
+
+  btn.disabled = true;
+  btn.style.opacity = "0.65";
+  btn.style.cursor = "default";
+} else {
+  messageEl.textContent = getPreMessage(p.label);
+  btn.disabled = false;
+  btn.style.opacity = "1";
+  btn.style.cursor = "pointer";
+}
 
   btn.disabled = true;
   btn.style.opacity = "0.65";
