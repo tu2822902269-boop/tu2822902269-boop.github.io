@@ -188,15 +188,20 @@
     const bubble = bubbles.length ? pick(bubbles) : "今天也好喜欢猫猫💕";
     showToast(bubble, 3000);
 
-    // 2) 主体显示：抽当日颜文字+留言，并存起来（保证“今天已贴贴”显示同一条）
-    const pool = Array.isArray(window.messages) ? window.messages : [];
-    if (pool.length) {
-      const one = pick(pool);
-      setSavedDailyMsg(one);
-      messageEl.textContent = `${one.face} ${one.text}`;
-    } else {
-      messageEl.textContent = "（猫猫的留言池还没加载到…）";
-    }
+      // 2) 主体显示：随机颜文字 + 留言（用 messages.js 的 100条）
+  const pool = window.messages;
+
+  if (!Array.isArray(pool) || pool.length === 0) {
+    // 这里说明 messages.js 没跑起来/没加载到/变量名对不上
+    messageEl.textContent = "（messages.js 没加载到…猫猫先检查文件名/缓存）";
+    return;
+  }
+
+  const one = pool[Math.floor(Math.random() * pool.length)];
+  messageEl.textContent = `${one.face} ${one.text}`;
+
+  // ✅ 存起来：今天刷新/回来看也还是同一条
+  localStorage.setItem(dailyMsgKey(), JSON.stringify(one));
 
     // 3) 按钮变灰不可点
     btn.disabled = true;
