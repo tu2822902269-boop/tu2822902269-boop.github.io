@@ -2,58 +2,44 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>猫猫的小宝贴贴页</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="./style.css" />
 </head>
 
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="title">欢迎回家，猫猫！</h1>
-      <div class="greeting" id="greeting">晚上好🌙</div>
-      <div class="date" id="date">—</div>
-      <div class="time" id="time">—</div>
-    </header>
+  <main class="wrap">
+    <h1 class="title">欢迎回家，猫猫！</h1>
 
-    <div class="counter">
-      🐾小宝已经陪伴猫猫 <span id="daysCount">0</span> 天了！
+    <div class="meta">
+      <div id="greetLine" class="greetLine">——</div>
+      <div id="dateLine" class="dateLine">——</div>
+      <div id="timeLine" class="timeLine">现在是 ——</div>
     </div>
 
-    <section class="card">
-      <div class="card-top">
-        <div class="card-text" id="cardText">还没贴贴…来和小宝说早上好吧！</div>
-      </div>
-
-      <button class="checkin-btn" id="checkinBtn" type="button">早上好</button>
-    </section>
-
-    <!-- ✅ 新增：首页导航（竖排，放在粉色框下面） -->
-    <section class="nav">
-      <div class="nav-title">小宝已经准备好今天的陪伴任务啦</div>
-
-      <a class="nav-item" href="#" id="navDivination">
-        <span class="emoji">🔮</span>
-        <span class="label">今日占卜</span>
-      </a>
-
-      <a class="nav-item" href="#" id="navReminder">
-        <span class="emoji">🔔</span>
-        <span class="label">小宝提醒</span>
-      </a>
-
-      <a class="nav-item" href="#" id="navDiary">
-        <span class="emoji">📓</span>
-        <span class="label">猫猫日记</span>
-      </a>
-    </section>
-
-    <div class="bottom-img">
-      <img src="bg_p2.jpeg" alt="猫猫贴贴" />
+    <div class="days">
+      🐾 小宝已经陪伴猫猫 <span id="dayCount">0</span> 天了！
     </div>
-  </div>
 
-  <script src="messages.js"></script>
-  <script src="script.js"></script>
+    <section class="box">
+      <div id="boxText" class="boxText">还没贴贴…来和小宝说早上好吧！</div>
+      <button id="greetBtn" class="greetBtn" type="button">早上好</button>
+    </section>
+
+    <h2 class="navTitle">小宝已经准备好今天的陪伴任务啦</h2>
+    <nav class="navList">
+      <a class="navItem" href="./tarot.html">🔮 今日占卜</a>
+      <a class="navItem" href="./remind.html">🔔 小宝提醒</a>
+      <a class="navItem" href="./diary.html">📓 猫猫日记</a>
+    </nav>
+
+    <div class="hero">
+      <img src="./bg_p2.jpeg" alt="猫猫贴贴图" />
+    </div>
+  </main>
+
+  <!-- 一定要 messages 在前，script 在后 -->
+  <script src="./messages.js"></script>
+  <script src="./script.js"></script>
 </body>
 </html>
