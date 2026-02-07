@@ -9,6 +9,8 @@
   const btn = $("greetBtn");
   const inlineLabel = $("btnLabelInline");
   const toast = $("toast");
+  const KEY_CHECKED = "cat_checkedin_date";
+const KEY_DAILY_MSG = "cat_daily_msg";
 
   function getPeriod(h){
     if (h >= 5 && h <= 11) return {label:"早上好", emoji:"🌤️"};
@@ -110,17 +112,30 @@
     btn.textContent=p.label;
     inlineLabel.textContent=p.label;
 
-    if(hasCheckedIn()){
-      messageEl.textContent = `还没贴贴…来和小宝说${p.label}吧！`;
-      btn.disabled=true;
-      btn.style.opacity="0.65";
-      btn.style.cursor="default";
-    }else{
-      messageEl.textContent = `还没贴贴…来和小宝说${p.label}吧！`;
-      btn.disabled=false;
-      btn.style.opacity="1";
-      btn.style.cursor="pointer";
+    if (hasCheckedIn()) {
+  // ✅ 已贴贴：显示“今天随机到的那条留言”
+  const saved = localStorage.getItem(KEY_DAILY_MSG);
+  if (saved) {
+    try {
+      const one = JSON.parse(saved);
+      messageEl.textContent = `${one.face} ${one.text}`;
+    } catch (e) {
+      messageEl.textContent = getAfterMessage(p.label);
     }
+  } else {
+    messageEl.textContent = getAfterMessage(p.label);
+  }
+
+  btn.disabled = true;
+  btn.style.opacity = "0.65";
+  btn.style.cursor = "default";
+} else {
+  // ✅ 未贴贴：显示引导语（还没贴贴…）
+  messageEl.textContent = getPreMessage(p.label);
+  btn.disabled = false;
+  btn.style.opacity = "1";
+  btn.style.cursor = "pointer";
+}
     daysEl.textContent=String(calcDays());
   }
 
@@ -134,18 +149,21 @@
   // 1) 三秒小气泡
   showToast("今天也好喜欢猫猫💕");
 
-  // 2) 主体显示：随机颜文字 + 留言（用你原本那100条）
-  const pool = (window.messages && window.messages.length)
+ // 2) 主体显示：随机颜文字 + 留言（用你原本那100条）
+const pool = (window.messages && window.messages.length)
   ? window.messages
   : (window.MESSAGES && window.MESSAGES.length)
-    ? window.MESSAGES.map(t => ({ face:"(๑•̀ㅂ•́)و✧", text: t }))
+    ? window.MESSAGES.map(t => ({ face: "(๑•̀ㅂ•́)و✧", text: t }))
     : [];
 
-if(pool.length){
-  const one = pool[Math.floor(Math.random()*pool.length)];
+if (pool.length) {
+  const one = pool[Math.floor(Math.random() * pool.length)];
   messageEl.textContent = `${one.face} ${one.text}`;
-}else{
-  messageEl.textContent = "（猫猫的留言池还没加载到…）";
+
+  // ✅ 关键：存起来，让 tick() 里“已贴贴状态”可以读出来
+  localStorage.setItem("cat_daily_msg", JSON.stringify(one));
+} else {
+  messageEl.textContent = "（猫猫的留言还没加载到…）";
 }
 
   // 3) 按钮变灰不可点（你下面本来就有，也可以留着）
