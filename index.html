@@ -4,49 +4,49 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>猫猫的小宝贴贴页</title>
-
-  <!-- 关键：一定要是这个文件名，并加 ?v=15 防缓存 -->
-  <link rel="stylesheet" href="./style.css?v=15" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=15" />
 </head>
 
 <body>
-  <div class="container">
+  <main class="wrap">
     <h1 class="title">欢迎回家，猫猫！</h1>
 
-    <!-- 时间区：这些 id 必须存在 -->
-    <div class="time-area">
-      <div id="greetLine" class="greet-line">加载中…</div>
-      <div id="dateLine" class="date-line">—</div>
-      <div id="timeLine" class="time-line">现在是 —</div>
+    <div class="subline">
+      <div id="greeting" class="greeting">你好</div>
+      <div id="date" class="date"></div>
+      <div id="time" class="time"></div>
     </div>
 
-    <div class="days-line">
-      🐾 小宝已经陪伴猫猫 <span id="dayCount">0</span> 天了！
+    <div class="days">
+      <span class="paw">🐾</span> 小宝已经陪伴猫猫 <span id="daysCount" class="days-num">0</span> 天了！
     </div>
 
-    <!-- 粉色框 -->
-    <div class="pink-box">
-      <div id="boxText" class="box-text">加载中…</div>
-      <button id="greetBtn" class="greet-btn" type="button">加载中</button>
-      <div id="bubble" class="bubble hidden">今天也好喜欢猫猫💕</div>
-    </div>
+    <section class="card">
+      <div id="message" class="message">还没贴贴…来和小宝说<span id="btnLabelInline">早上好</span>吧！</div>
+      <button id="greetBtn" class="btn" type="button">早上好</button>
+    </section>
 
-    <h2 class="nav-title">小宝已经准备好今天的陪伴任务啦</h2>
-
-    <!-- 竖排导航 -->
-    <div class="nav-list">
-      <a class="nav-item" href="./tarot.html">🔮 今日占卜</a>
-      <a class="nav-item" href="./reminder.html">🔔 小宝提醒</a>
-      <a class="nav-item" href="./diary.html">📓 猫猫日记</a>
-    </div>
+    <section class="nav">
+      <div class="nav-title">小宝已经准备好今天的陪伴任务啦</div>
+      <div class="nav-list">
+        <a class="nav-item" href="#" data-feature="divination">🔮 今日占卜</a>
+        <a class="nav-item" href="#" data-feature="reminder">🔔 小宝提醒</a>
+        <a class="nav-item" href="#" data-feature="diary">📓 猫猫日记</a>
+      </div>
+      <div class="nav-note">（先做索引：点了会提示“施工中”～）</div>
+    </section>
 
     <div class="img-wrap">
-      <img src="./bg_p2.jpeg" alt="猫猫" />
+      <img class="hero" src="bg_p2.jpeg" alt="猫猫与小宝" />
     </div>
-  </div>
+  </main>
 
-  <!-- 关键：messages 一定在前，script 一定在后，并加 ?v=15 防缓存 -->
-  <script src="./messages.js?v=15"></script>
-  <script src="./script.js?v=15"></script>
+  <div id="toast" class="toast" aria-live="polite"></div>
+
+  <script src="messages.js?v=15"></script>
+  <script src="script.js?v=15" defer></script>
 </body>
 </html>
