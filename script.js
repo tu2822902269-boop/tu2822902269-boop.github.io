@@ -56,6 +56,9 @@ const KEY_DAILY_MSG = "cat_daily_msg";
     const d=new Date();
     return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
   }
+  function dailyMsgKey(){
+  return KEY_DAILY_MSG + "_" + todayKey();
+}
   function pick(list){ return list[Math.floor(Math.random()*list.length)]; }
   function tpl(s, greet){ return (s||"").split("{greet}").join(greet); }
 
@@ -113,32 +116,26 @@ const KEY_DAILY_MSG = "cat_daily_msg";
     inlineLabel.textContent=p.label;
 
     if (hasCheckedIn()) {
-  // ✅ 已贴贴：显示“今天随机到的那条留言”
-      if (hasCheckedIn()) {
-      // ✅ 已贴贴：优先读今天存下来的随机留言对象
-      let one = null;
-      try {
-        const raw = localStorage.getItem(KEY_DAILY_MSG);
-        if (raw && raw.trim().startsWith("{")) one = JSON.parse(raw);
-      } catch (e) {}
-
-      if (one && one.face && one.text) {
-        messageEl.textContent = `${one.face} ${one.text}`;
-      } else {
-        // 兜底：别让页面空着
-        messageEl.textContent = "（今天已经贴贴过啦💕）";
-      }
-
-      btn.disabled = true;
-      btn.style.opacity = "0.65";
-      btn.style.cursor = "default";
-    } else {
-      // ✅ 未贴贴：显示引导语
-      messageEl.textContent = `还没贴贴…来和小宝说${p.label}吧！`;
-      btn.disabled = false;
-      btn.style.opacity = "1";
-      btn.style.cursor = "pointer";
+  // ✅ 已贴贴：永远显示“今天随机到的那条颜文字+留言”
+  const saved = localStorage.getItem(dailyMsgKey());
+  if (saved) {
+    try {
+      const one = JSON.parse(saved);
+      messageEl.textContent = `${one.face} ${one.text}`;
+    } catch (e) {
+      messageEl.textContent = "（猫猫今天的留言解析失败了…）";
     }
+  } else {
+    // ✅ 如果今天没存过，就现场抽一条并存起来（避免显示奇怪的“已贴贴文案”）
+    const pool = (window.messages && window.messages.length) ? window.messages : [];
+    if (pool.length) {
+      const one = pool[Math.floor(Math.random() * pool.length)];
+      messageEl.textContent = `${one.face} ${one.text}`;
+      localStorage.setItem(dailyMsgKey(), JSON.stringify(one));
+    } else {
+      messageEl.textContent = "（猫猫的留言池还没加载到…）";
+    }
+  }
 
   btn.disabled = true;
   btn.style.opacity = "0.65";
