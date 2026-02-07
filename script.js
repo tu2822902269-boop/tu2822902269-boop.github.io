@@ -143,18 +143,7 @@
   btn.style.opacity = "0.65";
   btn.style.cursor = "default";
 });
-    const now=new Date();
-    const p=getPeriod(now.getHours());
-    if(hasCheckedIn()) return;
-    setCheckedIn();
-    beep();
-    messageEl.textContent=getAfterMessage(p.label);
-    showToast("今天也好喜欢猫猫💕");
-    btn.disabled=true;
-    btn.style.opacity="0.65";
-    btn.style.cursor="default";
-  });
-
+    
   document.querySelectorAll(".nav-item").forEach(a=>{
     a.addEventListener("click",(e)=>{
       e.preventDefault();
