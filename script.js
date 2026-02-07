@@ -159,8 +159,18 @@
           setSavedDailyMsg(one);
           messageEl.textContent = `${one.face} ${one.text}`;
         } else {
-          messageEl.textContent = "（猫猫的留言池还没加载到…）";
-        }
+  messageEl.textContent = "（留言还在路上…）";
+  setTimeout(() => {
+    const pool2 = Array.isArray(window.messages) ? window.messages : [];
+    if (pool2.length) {
+      const one2 = pick(pool2);
+      setSavedDailyMsg(one2);
+      messageEl.textContent = `${one2.face} ${one2.text}`;
+    } else {
+      messageEl.textContent = "（猫猫的留言池还没加载到…）";
+    }
+  }, 200);
+}
       }
 
       btn.disabled = true;
@@ -188,13 +198,25 @@
     const bubble = bubbles.length ? pick(bubbles) : "今天也好喜欢猫猫💕";
     showToast(bubble, 3000);
 
-      // 2) 主体显示：随机颜文字 + 留言（用 messages.js 的 100条）
-  const pool = window.messages;
+        // 2) 主体显示：随机颜文字 + 留言（如果 messages 还没加载，就等一下再试）
+  const tryPickMessage = () => {
+    const pool = (window.messages && window.messages.length) ? window.messages : [];
+    if (pool.length) {
+      const one = pool[Math.floor(Math.random() * pool.length)];
+      messageEl.textContent = `${one.face} ${one.text}`;
+      localStorage.setItem(KEY_DAILY_MSG, JSON.stringify(one)); // ✅ 存当天留言
+      return true;
+    }
+    return false;
+  };
 
-  if (!Array.isArray(pool) || pool.length === 0) {
-    // 这里说明 messages.js 没跑起来/没加载到/变量名对不上
-    messageEl.textContent = "（messages.js 没加载到…猫猫先检查文件名/缓存）";
-    return;
+  if (!tryPickMessage()) {
+    // 等 200ms 再试一次（给 messages.js 一点时间）
+    setTimeout(() => {
+      if (!tryPickMessage()) {
+        messageEl.textContent = "（留言还在路上…再戳一次试试）";
+      }
+    }, 200);
   }
 
   const one = pool[Math.floor(Math.random() * pool.length)];
