@@ -111,12 +111,12 @@
     inlineLabel.textContent=p.label;
 
     if(hasCheckedIn()){
-      messageEl.textContent=getAfterMessage(p.label);
+      messageEl.textContent = `还没贴贴…来和小宝说${p.label}吧！`;
       btn.disabled=true;
       btn.style.opacity="0.65";
       btn.style.cursor="default";
     }else{
-      messageEl.textContent=getPreMessage(p.label);
+      messageEl.textContent = `还没贴贴…来和小宝说${p.label}吧！`;
       btn.disabled=false;
       btn.style.opacity="1";
       btn.style.cursor="pointer";
@@ -125,6 +125,24 @@
   }
 
   btn.addEventListener("click", ()=>{
+  const now = new Date();
+  const p = getPeriod(now.getHours());
+  if(hasCheckedIn()) return;
+
+  setCheckedIn();
+
+  // 1) 三秒小气泡
+  showToast("今天也好喜欢猫猫💕");
+
+  // 2) 主体显示：随机颜文字 + 留言（用你原本那100条）
+  const one = window.messages[Math.floor(Math.random() * window.messages.length)];
+  messageEl.textContent = `${one.face}  ${one.text}`;
+
+  // 3) 按钮变灰不可点（你下面本来就有，也可以留着）
+  btn.disabled = true;
+  btn.style.opacity = "0.65";
+  btn.style.cursor = "default";
+});
     const now=new Date();
     const p=getPeriod(now.getHours());
     if(hasCheckedIn()) return;
