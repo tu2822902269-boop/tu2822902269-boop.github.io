@@ -135,8 +135,18 @@
   showToast("今天也好喜欢猫猫💕");
 
   // 2) 主体显示：随机颜文字 + 留言（用你原本那100条）
-  const one = window.messages[Math.floor(Math.random() * window.messages.length)];
-  messageEl.textContent = `${one.face}  ${one.text}`;
+  const pool = (window.messages && window.messages.length)
+  ? window.messages
+  : (window.MESSAGES && window.MESSAGES.length)
+    ? window.MESSAGES.map(t => ({ face:"(๑•̀ㅂ•́)و✧", text: t }))
+    : [];
+
+if(pool.length){
+  const one = pool[Math.floor(Math.random()*pool.length)];
+  messageEl.textContent = `${one.face} ${one.text}`;
+}else{
+  messageEl.textContent = "（猫猫的留言池还没加载到…）";
+}
 
   // 3) 按钮变灰不可点（你下面本来就有，也可以留着）
   btn.disabled = true;
