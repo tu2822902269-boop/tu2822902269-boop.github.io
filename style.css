@@ -124,3 +124,6 @@ html, body{
 }
 .toast.show{ opacity:1; transform:translateX(-50%) translateY(2px); }
 .card,.btn,.nav-item{ position:relative; z-index:1; }
+.nav-item{
+  color:#ff6fae;
+}
