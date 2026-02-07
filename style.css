@@ -12,7 +12,7 @@ html, body{
   margin:0;
   padding:0;
   color:var(--ink);
-  font-family:"Noto Sans SC",-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif;
+  font-family:"ZCOOL KuaiLe","Noto Sans SC","PingFang SC",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
 
   background-image:url("bg_p2.jpeg");
   background-size:cover;
