@@ -7,34 +7,14 @@
   const daysEl = $("daysCount");
   const messageEl = $("message");
   const btn = $("greetBtn");
-  let inlineLabel = $("btnLabelInline");
   const toast = $("toast");
 
-  const START_KEY = "cat_start_date_v1";
-
-  function pad2(n) {
-    return String(n).padStart(2, "0");
-  }
-
-  function todayKey() {
-    const d = new Date();
-    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
-  }
-
-  function checkedKey() {
-    return `cat_checked_${todayKey()}`;
-  }
-
-  function dailyMsgKey() {
-    return `cat_daily_msg_${todayKey()}`;
-  }
-
-  // ✅ 让猫猫不用绝望：加 ?reset=1 可以重置“今天已点过”
-  // 例：tu282...github.io/?reset=1
-  if (location.search.includes("reset=1")) {
-    localStorage.removeItem(checkedKey());
-    localStorage.removeItem(dailyMsgKey());
-  }
+  // ✅ 用版本前缀，自动“跳过你之前点过的旧记录”
+  const PREFIX = "catv2_";
+  const KEY_START = PREFIX + "start_date";
+  const KEY_CHECKED = PREFIX + "checked_";   // + todayKey()
+  const KEY_DAILYMSG = PREFIX + "dailymsg_"; // + todayKey()
+  const KEY_PREMSG = PREFIX + "premsg_";     // + todayKey()
 
   function getPeriod(h) {
     if (h >= 5 && h <= 11) return { label: "早上好", emoji: "🌤️" };
@@ -44,28 +24,28 @@
 
   function formatDate(d) {
     const y = d.getFullYear();
-    const m = pad2(d.getMonth() + 1);
-    const dd = pad2(d.getDate());
-    const w = ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"][d.getDay()];
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const w = ["星期日","星期一","星期二","星期三","星期四","星期五","星期六"][d.getDay()];
     return `${y}年${m}月${dd}日  ${w}`;
   }
 
   function formatTime(d) {
-    const hh = pad2(d.getHours());
-    const mm = pad2(d.getMinutes());
-    const ss = pad2(d.getSeconds());
+    const hh = String(d.getHours()).padStart(2, "0");
+    const mm = String(d.getMinutes()).padStart(2, "0");
+    const ss = String(d.getSeconds()).padStart(2, "0");
     return `${hh}:${mm}:${ss}`;
   }
 
   function getStartDate() {
-    const raw = localStorage.getItem(START_KEY);
+    const raw = localStorage.getItem(KEY_START);
     if (raw) {
       const dt = new Date(raw);
       if (!isNaN(dt.getTime())) return dt;
     }
     const now = new Date();
     const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    localStorage.setItem(START_KEY, start.toISOString());
+    localStorage.setItem(KEY_START, start.toISOString());
     return start;
   }
 
@@ -78,8 +58,29 @@
     return Math.max(1, Math.floor(diff / 86400000) + 1);
   }
 
+  function todayKey() {
+    const d = new Date();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${d.getFullYear()}-${m}-${dd}`;
+  }
+
+  function hasCheckedIn() {
+    return localStorage.getItem(KEY_CHECKED + todayKey()) === "1";
+  }
+  function setCheckedIn() {
+    localStorage.setItem(KEY_CHECKED + todayKey(), "1");
+  }
+
   function pick(list) {
     return list[Math.floor(Math.random() * list.length)];
+  }
+
+  function showToast(text, ms = 3000) {
+    toast.textContent = text;
+    toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => toast.classList.remove("show"), ms);
   }
 
   function beep() {
@@ -101,39 +102,25 @@
     } catch (e) {}
   }
 
-  function showToast(text, duration = 3000) {
-    toast.textContent = text;
-    toast.classList.add("show");
-    clearTimeout(showToast._t);
-    showToast._t = setTimeout(() => toast.classList.remove("show"), duration);
+  // ✅ messages.js 暴露的是 window.messages（对象数组：{face,text}）
+  function getPool() {
+    const pool = window.messages;
+    return Array.isArray(pool) ? pool : [];
   }
 
-  function hasCheckedIn() {
-    return localStorage.getItem(checkedKey()) === "1";
+  function saveDailyMsg(one) {
+    localStorage.setItem(KEY_DAILYMSG + todayKey(), JSON.stringify(one));
   }
-
-  function setCheckedIn() {
-    localStorage.setItem(checkedKey(), "1");
-  }
-
-  function getSavedDailyMsg() {
-    const raw = localStorage.getItem(dailyMsgKey());
+  function loadDailyMsg() {
+    const raw = localStorage.getItem(KEY_DAILYMSG + todayKey());
     if (!raw) return null;
-    try {
-      return JSON.parse(raw);
-    } catch (e) {
-      return null;
-    }
+    try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
-  function setSavedDailyMsg(one) {
-    localStorage.setItem(dailyMsgKey(), JSON.stringify(one));
-  }
-
-  function ensurePreMessage(pLabel) {
-    // ✅ 不再用 textContent 覆盖 message 的 span（btnLabelInline），直接用 innerHTML 保持结构
-    messageEl.innerHTML = `还没贴贴…来和小宝说<span id="btnLabelInline">${pLabel}</span>吧！`;
-    inlineLabel = $("btnLabelInline"); // 重新拿一次
+  // ✅ 未点击前的引导语：要保留 span，所以用 innerHTML
+  function ensurePreMessage(label) {
+    // 你想要固定这一句就固定（不随机）
+    messageEl.innerHTML = `还没贴贴…来和小宝说<span id="btnLabelInline">${label}</span>吧！`;
   }
 
   function tick() {
@@ -144,48 +131,37 @@
     dateEl.textContent = formatDate(now);
     timeEl.textContent = `现在是 ${formatTime(now)}`;
     btn.textContent = p.label;
-
     daysEl.textContent = String(calcDays());
 
     if (hasCheckedIn()) {
-      const saved = getSavedDailyMsg();
+      // ✅ 已贴贴：永远显示今天抽到的那条
+      const saved = loadDailyMsg();
       if (saved && saved.face && saved.text) {
         messageEl.textContent = `${saved.face} ${saved.text}`;
       } else {
-        // 兜底：如果没存到，就从 messages 再抽一次并立刻存
-        const pool = Array.isArray(window.messages) ? window.messages : [];
+        // ✅ 如果意外没存到，就现场抽一次再存（防闪回）
+        const pool = getPool();
         if (pool.length) {
           const one = pick(pool);
-          setSavedDailyMsg(one);
+          saveDailyMsg(one);
           messageEl.textContent = `${one.face} ${one.text}`;
         } else {
-  messageEl.textContent = "（留言还在路上…）";
-  setTimeout(() => {
-    const pool2 = Array.isArray(window.messages) ? window.messages : [];
-    if (pool2.length) {
-      const one2 = pick(pool2);
-      setSavedDailyMsg(one2);
-      messageEl.textContent = `${one2.face} ${one2.text}`;
-    } else {
-      messageEl.textContent = "（猫猫的留言池还没加载到…）";
-    }
-  }, 200);
-}
+          messageEl.textContent = "（猫猫的留言池还没加载到…）";
+        }
       }
-
       btn.disabled = true;
       btn.style.opacity = "0.65";
       btn.style.cursor = "default";
     } else {
+      // ✅ 未贴贴：引导语
       ensurePreMessage(p.label);
-
       btn.disabled = false;
       btn.style.opacity = "1";
       btn.style.cursor = "pointer";
     }
   }
 
-  // ✅ 点击贴贴
+  // ✅ 点击贴贴：弹三秒气泡 + 抽当日留言 + 按钮变灰
   btn.addEventListener("click", () => {
     const now = new Date();
     const p = getPeriod(now.getHours());
@@ -193,45 +169,22 @@
 
     setCheckedIn();
 
-    // 1) 三秒小气泡（从 AFTER_MESSAGES 抽一条；没有就用默认那句）
-    const bubbles = Array.isArray(window.AFTER_MESSAGES) ? window.AFTER_MESSAGES : [];
-    const bubble = bubbles.length ? pick(bubbles) : "今天也好喜欢猫猫💕";
-    showToast(bubble, 3000);
+    showToast("今天也好喜欢猫猫💕", 3000);
 
-        // 2) 主体显示：随机颜文字 + 留言（如果 messages 还没加载，就等一下再试）
-  const tryPickMessage = () => {
-    const pool = (window.messages && window.messages.length) ? window.messages : [];
+    const pool = getPool();
     if (pool.length) {
-      const one = pool[Math.floor(Math.random() * pool.length)];
+      const one = pick(pool);
+      saveDailyMsg(one);
       messageEl.textContent = `${one.face} ${one.text}`;
-      localStorage.setItem(KEY_DAILY_MSG, JSON.stringify(one)); // ✅ 存当天留言
-      return true;
+    } else {
+      messageEl.textContent = "（猫猫的留言池还没加载到…）";
     }
-    return false;
-  };
 
-  if (!tryPickMessage()) {
-    // 等 200ms 再试一次（给 messages.js 一点时间）
-    setTimeout(() => {
-      if (!tryPickMessage()) {
-        messageEl.textContent = "（留言还在路上…再戳一次试试）";
-      }
-    }, 200);
-  }
-
-  const one = pool[Math.floor(Math.random() * pool.length)];
-  messageEl.textContent = `${one.face} ${one.text}`;
-
-  // ✅ 存起来：今天刷新/回来看也还是同一条
-  localStorage.setItem(dailyMsgKey(), JSON.stringify(one));
-
-    // 3) 按钮变灰不可点
     btn.disabled = true;
     btn.style.opacity = "0.65";
     btn.style.cursor = "default";
   });
 
-  // ✅ 索引按钮：可点，提示施工中
   document.querySelectorAll(".nav-item").forEach((a) => {
     a.addEventListener("click", (e) => {
       e.preventDefault();
