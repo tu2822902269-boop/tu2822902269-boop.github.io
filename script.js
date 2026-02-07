@@ -140,6 +140,7 @@ const KEY_DAILY_MSG = "cat_daily_msg";
   }
 
   btn.addEventListener("click", ()=>{
+  showToast("收到点击啦！", 1000);
   const now = new Date();
   const p = getPeriod(now.getHours());
   if(hasCheckedIn()) return;
