@@ -1,249 +1,150 @@
-function todayKey() {
-  const d = new Date();
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
-}
+(function(){
+  const $ = (id)=>document.getElementById(id);
 
-function getTimeLabel() {
-  const h = new Date().getHours();
-  // 小荼定义的时段：5-11 早上；12-17 下午；18-4 晚上
-  if (h >= 5 && h <= 11) return "早上好";
-  if (h >= 12 && h <= 17) return "下午好";
-  return "晚上好";
-}
+  const greetingEl = $("greeting");
+  const dateEl = $("date");
+  const timeEl = $("time");
+  const daysEl = $("daysCount");
+  const messageEl = $("message");
+  const btn = $("greetBtn");
+  const inlineLabel = $("btnLabelInline");
+  const toast = $("toast");
 
-function getTimePrompt() {
-  const label = getTimeLabel();
-  // 打卡前的提示：不出现颜文字
-  if (label === "早上好") return "还没贴贴…来和小宝说早上好吧！";
-  if (label === "下午好") return "还没贴贴…来和小宝说下午好吧！";
-  return "还没贴贴…来和小宝说晚上好吧！";
-}
+  function getPeriod(h){
+    if (h >= 5 && h <= 11) return {label:"早上好", emoji:"🌤️"};
+    if (h >= 12 && h <= 17) return {label:"下午好", emoji:"🌞"};
+    return {label:"晚上好", emoji:"🌙"};
+  }
+  function formatDate(d){
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,"0");
+    const dd=String(d.getDate()).padStart(2,"0");
+    const w=["星期日","星期一","星期二","星期三","星期四","星期五","星期六"][d.getDay()];
+    return `${y}年${m}月${dd}日  ${w}`;
+  }
+  function formatTime(d){
+    const hh=String(d.getHours()).padStart(2,"0");
+    const mm=String(d.getMinutes()).padStart(2,"0");
+    const ss=String(d.getSeconds()).padStart(2,"0");
+    return `${hh}:${mm}:${ss}`;
+  }
 
-// ===== 点击音效 =====
-let _audioCtx = null;
-function playClick() {
-  // iOS 上 <audio> 可能因为权限/未加载而不响；用 WebAudio 做一个“哒”更稳
-  try {
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    if (AudioCtx) {
-      // 复用同一个 AudioContext，避免 Safari 频繁 new/close 导致不出声
-      if (!_audioCtx) _audioCtx = new AudioCtx();
-      _audioCtx.resume?.();
-
-      const o = _audioCtx.createOscillator();
-      const g = _audioCtx.createGain();
-      o.type = "square";
-      o.frequency.value = 900;
-
-      // 非常短的包络：啵一下
-      const now = _audioCtx.currentTime;
-      g.gain.setValueAtTime(0.0001, now);
-      g.gain.exponentialRampToValueAtTime(0.06, now + 0.01);
-      g.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
-
-      o.connect(g);
-      g.connect(_audioCtx.destination);
-      o.start(now);
-      o.stop(now + 0.09);
-      return;
+  const START_KEY="cat_start_date_v1";
+  function getStartDate(){
+    const raw = localStorage.getItem(START_KEY);
+    if (raw){
+      const dt = new Date(raw);
+      if (!isNaN(dt.getTime())) return dt;
     }
-  } catch (e) {}
-  // 兜底：如果你未来放了 click.mp3，就仍然能用
-  const sound = document.getElementById("clickSound");
-  if (sound) {
-    sound.currentTime = 0;
-    sound.play().catch(() => {});
+    const now=new Date();
+    const start=new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0,0);
+    localStorage.setItem(START_KEY, start.toISOString());
+    return start;
   }
-}
-
-// ===== 3秒小气泡 =====
-function showBubble(text) {
-  const bubble = document.getElementById("bubble");
-  if (!bubble) return;
-  bubble.textContent = text;
-  bubble.classList.add("show");
-  clearTimeout(window.__bubbleTimer);
-  window.__bubbleTimer = setTimeout(() => {
-    bubble.classList.remove("show");
-  }, 3000);
-}
-
-// ===== 时间模块（每秒刷新）=====
-function updateClock(){
-  const now = new Date();
-  const greetingEl = document.getElementById("greeting");
-  const dateEl = document.getElementById("date");
-  const timeEl = document.getElementById("time");
-  const btn = document.getElementById("greetBtn");
-
-  const label = getTimeLabel();
-  if (greetingEl) greetingEl.innerText = label + " " + (label === "早上好" ? "🌤" : label === "下午好" ? "☀️" : "🌙");
-  if (dateEl) dateEl.innerText = now.toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'long' });
-  if (timeEl) timeEl.innerText = "现在是 " + now.toLocaleTimeString('zh-CN');
-  if (btn) btn.innerText = label;
-}
-
-// ===== 天数渲染 =====
-function renderDayCount() {
-  const dayCount = localStorage.getItem("dayCount") || "0";
-  const el = document.getElementById("dayCount");
-  if (el) el.textContent = dayCount;
-}
-
-// ===== 显示/隐藏颜文字 =====
-function setFaceVisible(visible) {
-  const faceEl = document.getElementById("face");
-  if (!faceEl) return;
-  faceEl.style.display = visible ? "block" : "none";
-}
-
-// ===== 今日固定随机（用于“迁移”：之前点过但没存 lastMessage 的情况）=====
-function seededMessage(dateStr) {
-  if (!Array.isArray(messages) || messages.length === 0) return null;
-  // 简单稳定 hash：把 dateStr 转成一个可重复的整数
-  let hash = 0;
-  for (let i = 0; i < dateStr.length; i++) {
-    hash = (hash * 31 + dateStr.charCodeAt(i)) >>> 0;
-  }
-  const idx = hash % messages.length;
-  return messages[idx];
-}
-
-function setMessageToUI(msg) {
-  const faceEl = document.getElementById("face");
-  const quoteEl = document.getElementById("quoteText");
-
-  if (typeof msg === "string") {
-    if (faceEl) faceEl.textContent = "";
-    if (quoteEl) quoteEl.textContent = msg;
-    setFaceVisible(false);
-    return { saved: msg };
+  function calcDays(){
+    const s=getStartDate();
+    const now=new Date();
+    const s0=new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0,0,0,0);
+    const n0=new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0,0,0,0);
+    const diff=n0.getTime()-s0.getTime();
+    return Math.max(1, Math.floor(diff/86400000)+1);
   }
 
-  if (msg && typeof msg === "object") {
-    const face = msg.face || "";
-    const text = msg.text || "";
-    if (faceEl) faceEl.textContent = face;
-    if (quoteEl) quoteEl.textContent = text;
-    setFaceVisible(!!(face && face.trim()));
-    return { saved: { face, text } };
+  function todayKey(){
+    const d=new Date();
+    return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
   }
+  function pick(list){ return list[Math.floor(Math.random()*list.length)]; }
+  function tpl(s, greet){ return (s||"").split("{greet}").join(greet); }
 
-  // 兜底：如果 messages.js 没加载/为空
-  if (faceEl) faceEl.textContent = "";
-  if (quoteEl) quoteEl.textContent = "（猫猫把留言抱走了…但小宝还在这里贴贴 🐾）";
-  setFaceVisible(false);
-  return { saved: "（猫猫把留言抱走了…但小宝还在这里贴贴 🐾）" };
-}
-
-// ===== 抽一句（不重复一轮再洗牌）=====
-function pickMessage() {
-  let pool;
-  try { pool = JSON.parse(localStorage.getItem("msgPool") || "null"); } catch(e) { pool = null; }
-  if (!Array.isArray(pool) || pool.length === 0) {
-    pool = (Array.isArray(messages) ? [...messages] : []).sort(() => Math.random() - 0.5);
-  }
-  const msg = pool.pop();
-  localStorage.setItem("msgPool", JSON.stringify(pool));
-  return msg;
-}
-
-// ===== 显示今日留言（用于刷新/重新进入）=====
-function renderSavedMessageIfAny() {
-  const today = todayKey();
-  const last = localStorage.getItem("lastGreetingDate");
-  const btn = document.getElementById("greetBtn");
-
-  if (last === today) {
-    // 今日已打卡：优先读取 lastMessage；如果没有（旧版本遗留），用 seededMessage 补一个并写回
-    let savedRaw = localStorage.getItem("lastMessage");
-    let saved = null;
-
-    if (savedRaw) {
-      try { saved = JSON.parse(savedRaw); } catch(e) { saved = null; }
+  function getPreMessage(greet){
+    const key="cat_pre_msg_"+todayKey();
+    let msg=localStorage.getItem(key);
+    if(!msg){
+      msg=pick(window.MESSAGES||[]);
+      localStorage.setItem(key,msg);
     }
-
-    if (!saved) {
-      const msg = seededMessage(today);
-      const { saved: toSave } = setMessageToUI(msg);
-      localStorage.setItem("lastMessage", JSON.stringify(toSave));
-    } else {
-      setMessageToUI(saved);
+    return tpl(msg,greet);
+  }
+  function getAfterMessage(greet){
+    const key="cat_after_msg_"+todayKey();
+    let msg=localStorage.getItem(key);
+    if(!msg){
+      msg=pick(window.AFTER_MESSAGES||["今天也好喜欢猫猫💕"]);
+      localStorage.setItem(key,msg);
     }
+    return tpl(msg,greet);
+  }
+  function hasCheckedIn(){ return localStorage.getItem("cat_checked_"+todayKey())==="1"; }
+  function setCheckedIn(){ localStorage.setItem("cat_checked_"+todayKey(),"1"); }
 
-    if (btn) {
-      btn.disabled = true;
-      btn.style.opacity = "0.6";
-      btn.style.cursor = "not-allowed";
-    }
-    return true;
+  function beep(){
+    try{
+      const AudioCtx=window.AudioContext||window.webkitAudioContext;
+      const ctx=new AudioCtx();
+      const o=ctx.createOscillator();
+      const g=ctx.createGain();
+      o.type="sine"; o.frequency.value=880;
+      g.gain.value=0.001;
+      o.connect(g); g.connect(ctx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime+0.01);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.18);
+      o.stop(ctx.currentTime+0.2);
+      setTimeout(()=>ctx.close(),260);
+    }catch(e){}
+  }
+  function showToast(text){
+    toast.textContent=text;
+    toast.classList.add("show");
+    clearTimeout(showToast._t);
+    showToast._t=setTimeout(()=>toast.classList.remove("show"),1400);
   }
 
-  // 今日未打卡：显示邀请文案，不显示颜文字
-  const faceEl = document.getElementById("face");
-  const quoteEl = document.getElementById("quoteText");
-  if (faceEl) faceEl.textContent = "";
-  setFaceVisible(false);
-  if (quoteEl) quoteEl.textContent = getTimePrompt();
+  function tick(){
+    const now=new Date();
+    const p=getPeriod(now.getHours());
+    greetingEl.textContent=`${p.label} ${p.emoji}`;
+    dateEl.textContent=formatDate(now);
+    timeEl.textContent=`现在是 ${formatTime(now)}`;
+    btn.textContent=p.label;
+    inlineLabel.textContent=p.label;
 
-  if (btn) {
-    btn.disabled = false;
-    btn.style.opacity = "1";
-    btn.style.cursor = "pointer";
-  }
-  return false;
-}
-
-// ===== 打卡按钮 =====
-function sayHi() {
-  const today = todayKey();
-  const last = localStorage.getItem("lastGreetingDate");
-  if (last === today) return;
-
-  playClick();
-  showBubble("今天也好喜欢猫猫💕");
-
-  localStorage.setItem("lastGreetingDate", today);
-
-  let dayCount = parseInt(localStorage.getItem("dayCount") || "0", 10);
-  dayCount += 1;
-  localStorage.setItem("dayCount", String(dayCount));
-  renderDayCount();
-
-  const msg = pickMessage();
-  const { saved } = setMessageToUI(msg);
-  localStorage.setItem("lastMessage", JSON.stringify(saved));
-
-  const btn = document.getElementById("greetBtn");
-  if (btn) {
-    btn.disabled = true;
-    btn.style.opacity = "0.6";
-    btn.style.cursor = "not-allowed";
-  }
-}
-
-// ===== 启动 =====
-document.addEventListener("DOMContentLoaded", () => {
-  renderDayCount();
-  renderSavedMessageIfAny();
-  updateClock();
-
-  // 绑定按钮点击
-  const btn = document.getElementById("greetBtn");
-  if (btn) btn.addEventListener("click", sayHi);
-
-  setInterval(() => {
-    const today = todayKey();
-    const last = localStorage.getItem("lastGreetingDate");
-    if (last !== today) {
-      const quoteEl = document.getElementById("quoteText");
-      if (quoteEl) quoteEl.textContent = getTimePrompt();
+    if(hasCheckedIn()){
+      messageEl.textContent=getAfterMessage(p.label);
+      btn.disabled=true;
+      btn.style.opacity="0.65";
+      btn.style.cursor="default";
+    }else{
+      messageEl.textContent=getPreMessage(p.label);
+      btn.disabled=false;
+      btn.style.opacity="1";
+      btn.style.cursor="pointer";
     }
-    updateClock();
-  }, 1000);
-});
+    daysEl.textContent=String(calcDays());
+  }
 
-function showTab(tab){ alert('这个页面正在施工中 ✨'); }
+  btn.addEventListener("click", ()=>{
+    const now=new Date();
+    const p=getPeriod(now.getHours());
+    if(hasCheckedIn()) return;
+    setCheckedIn();
+    beep();
+    messageEl.textContent=getAfterMessage(p.label);
+    showToast("今天也好喜欢猫猫💕");
+    btn.disabled=true;
+    btn.style.opacity="0.65";
+    btn.style.cursor="default";
+  });
+
+  document.querySelectorAll(".nav-item").forEach(a=>{
+    a.addEventListener("click",(e)=>{
+      e.preventDefault();
+      beep();
+      showToast("还在施工中～先抱抱猫猫💕");
+    });
+  });
+
+  tick();
+  setInterval(tick, 1000);
+})();
