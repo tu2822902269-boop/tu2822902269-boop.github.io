@@ -185,14 +185,61 @@
     btn.style.cursor = "default";
   });
 
-  document.querySelectorAll(".nav-item").forEach((a) => {
-    a.addEventListener("click", (e) => {
-      e.preventDefault();
-      beep();
-      showToast("还在施工中～先抱抱猫猫💕", 1400);
-    });
+  const home = document.getElementById("home");
+const pages = {
+  divination: document.getElementById("page-divination"),
+  reminder: document.getElementById("page-reminder"),
+  diary: document.getElementById("page-diary"),
+};
+
+function openPage(key){
+  // 先把所有子页关掉
+  Object.values(pages).forEach(p => p.classList.add("hidden"));
+  // 隐藏首页，打开子页
+  home.classList.add("hidden");
+  pages[key].classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+
+function backHome(){
+  Object.values(pages).forEach(p => p.classList.add("hidden"));
+  home.classList.remove("hidden");
+  window.scrollTo(0, 0);
+}
+
+document.querySelectorAll(".nav-item").forEach((a) => {
+  a.addEventListener("click", (e) => {
+    e.preventDefault();
+    const key = a.dataset.feature; // divination/reminder/diary
+    beep();
+    openPage(key);
   });
+});
+
+document.querySelectorAll("[data-back]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    beep();
+    backHome();
+  });
+});
 
   tick();
   setInterval(tick, 1000);
 })();
+
+const divBtn = document.getElementById("divinationBtn");
+const divOut = document.getElementById("divinationResult");
+
+if (divBtn && divOut){
+  const DIV = [
+    "今天适合慢一点，越慢越稳。",
+    "把‘必须’换成‘可以’，猫猫会更轻松。",
+    "有些情绪不需要解释，只要被允许存在。",
+    "今天的好运在：猫猫愿意给自己一点点温柔。",
+  ];
+  divBtn.addEventListener("click", ()=>{
+    const t = DIV[Math.floor(Math.random()*DIV.length)];
+    divOut.textContent = t;
+    showToast("叮——抽到一条✨", 1200);
+  });
+}
