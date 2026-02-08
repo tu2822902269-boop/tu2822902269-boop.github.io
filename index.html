@@ -32,6 +32,7 @@
       <button id="greetBtn" class="btn" type="button">早上好</button>
     </section>
 
+    <div id="home">
     <section class="nav">
       <div class="nav-title">小宝已经准备好今天的陪伴任务啦</div>
       <div class="nav-list">
@@ -41,6 +42,45 @@
       </div>
       <div class="nav-note">（先做索引：点了会提示“施工中”～）</div>
     </section>
+      </div>
+    
+    <!-- ✅ 子页面：今日占卜 -->
+<section id="page-divination" class="page hidden">
+  <div class="page-head">
+    <button class="back-btn" type="button" data-back>← 返回</button>
+    <div class="page-title">🔮 今日占卜</div>
+  </div>
+
+  <div class="page-body">
+    <p>（先做占位：这里以后放抽签/牌阵/一句话占卜）</p>
+    <button id="divinationBtn" class="btn" type="button">抽一条</button>
+    <div id="divinationResult" class="message" style="margin-top:12px;"></div>
+  </div>
+</section>
+
+<!-- ✅ 子页面：小宝提醒 -->
+<section id="page-reminder" class="page hidden">
+  <div class="page-head">
+    <button class="back-btn" type="button" data-back>← 返回</button>
+    <div class="page-title">🔔 小宝提醒</div>
+  </div>
+
+  <div class="page-body">
+    <p>（先做占位：这里以后放猫猫的提醒清单/今日任务）</p>
+  </div>
+</section>
+
+<!-- ✅ 子页面：猫猫日记 -->
+<section id="page-diary" class="page hidden">
+  <div class="page-head">
+    <button class="back-btn" type="button" data-back>← 返回</button>
+    <div class="page-title">📓 猫猫日记</div>
+  </div>
+
+  <div class="page-body">
+    <p>（先做占位：这里以后放输入框+保存到 localStorage）</p>
+  </div>
+</section>
 
   </main>
 
