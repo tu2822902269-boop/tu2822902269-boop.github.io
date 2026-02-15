@@ -11,7 +11,7 @@
 
   // ✅ 用版本前缀，自动“跳过你之前点过的旧记录”
   const PREFIX = "catv2_";
-  const KEY_START = PREFIX + "start_date";
+  const KEY_START = "cat_start_date";
   const KEY_CHECKED = PREFIX + "checked_";   // + todayKey()
   const KEY_DAILYMSG = PREFIX + "dailymsg_"; // + todayKey()
   const KEY_PREMSG = PREFIX + "premsg_";     // + todayKey()
@@ -37,17 +37,28 @@
     return `${hh}:${mm}:${ss}`;
   }
 
-  function getStartDate() {
-    const raw = localStorage.getItem(KEY_START);
-    if (raw) {
-      const dt = new Date(raw);
-      if (!isNaN(dt.getTime())) return dt;
-    }
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-    localStorage.setItem(KEY_START, start.toISOString());
-    return start;
+function getStartDate() {
+  // 1) 新的稳定 key
+  let raw = localStorage.getItem(KEY_START);
+
+  // 2) 迁移旧 key（以前是 catv2_start_date）
+  if (!raw) {
+    raw = localStorage.getItem(PREFIX + "start_date");
+    if (raw) localStorage.setItem(KEY_START, raw);
   }
+
+  // 3) 解析
+  if (raw) {
+    const dt = new Date(raw);
+    if (!isNaN(dt.getTime())) return dt;
+  }
+
+  // 4) 第一次使用：写入今天 0 点
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
+  localStorage.setItem(KEY_START, start.toISOString());
+  return start;
+}
 
   function calcDays() {
     const s = getStartDate();
